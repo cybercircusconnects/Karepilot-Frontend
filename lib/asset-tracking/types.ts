@@ -1,15 +1,4 @@
-export interface Asset {
-  id: number;
-  name: string;
-  type: "device" | "equipment" | "staff";
-  status: "online" | "offline" | "low-battery";
-  location: string;
-  building: string;
-  floor: string;
-  batteryLevel: number;
-  lastSeen: string;
-  department?: string;
-}
+export type { Asset, AssetType, AssetStatus } from "@/lib/types/asset-tracking/asset";
 
 export interface StatItem {
   id: string;

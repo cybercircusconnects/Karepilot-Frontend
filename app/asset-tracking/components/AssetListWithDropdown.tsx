@@ -1,4 +1,5 @@
-import { Asset, FilterOption } from "@/lib/asset-tracking/types";
+import { FilterOption } from "@/lib/asset-tracking/types";
+import { Asset } from "@/lib/types/asset-tracking/asset";
 import { FilterDropdown } from "./FilterDropdown";
 import { AssetList } from "./AssetList";
 
@@ -7,13 +8,15 @@ interface AssetListWithDropdownProps {
   selectedType: string;
   onTypeChange: (value: string) => void;
   typeFilters: FilterOption[];
+  isLoading?: boolean;
 }
 
 export function AssetListWithDropdown({ 
   assets, 
   selectedType, 
   onTypeChange, 
-  typeFilters 
+  typeFilters,
+  isLoading = false,
 }: AssetListWithDropdownProps) {
   return (
     <div className="bg-card border border-border rounded-xl p-6">
@@ -32,7 +35,18 @@ export function AssetListWithDropdown({
       </div>
 
       <div className="space-y-4 max-h-[500px] overflow-y-auto">
-        <AssetList assets={assets} />
+        {isLoading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-card border border-border rounded-xl p-4 animate-pulse">
+                <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-muted rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <AssetList assets={assets} />
+        )}
       </div>
     </div>
   );
