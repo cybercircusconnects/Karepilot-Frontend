@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useParams } from "next/navigation";
 import Image from "next/image";
 import { UploadFloorPlanModal } from "./UploadFloorPlanModal";
 import { CreatePOIModal } from "./CreatePOIModal";
 import { quickActions } from "@/lib/dashboard/data";
 
 export default function QuickActions() {
+  const params = useParams();
+  const organizationId = params?.id as string;
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isPOIModalOpen, setIsPOIModalOpen] = useState(false);
 
@@ -16,6 +19,9 @@ export default function QuickActions() {
     } else if (action === "add-medical-poi") {
       setIsPOIModalOpen(true);
     }
+  };
+
+  const handleUploadSuccess = () => {
   };
 
   return (
@@ -61,6 +67,7 @@ export default function QuickActions() {
       <UploadFloorPlanModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
+        onSuccess={handleUploadSuccess}
       />
 
       <CreatePOIModal
