@@ -22,6 +22,7 @@ import { mapEditorMeasurementApi } from '../api/mapEditorMeasurementApi';
 import { mapEditorAnnotationApi } from '../api/mapEditorAnnotationApi';
 import { mapEditorPreferencesApi } from '../api/mapEditorPreferencesApi';
 import { assetTrackingApi } from '../api/assetTrackingApi';
+import { dashboardApi } from '../api/dashboardApi';
 
 export const store = configureStore({
   reducer: {
@@ -48,6 +49,7 @@ export const store = configureStore({
     [mapEditorAnnotationApi.reducerPath]: mapEditorAnnotationApi.reducer,
     [mapEditorPreferencesApi.reducerPath]: mapEditorPreferencesApi.reducer,
     [assetTrackingApi.reducerPath]: assetTrackingApi.reducer,
+    [dashboardApi.reducerPath]: dashboardApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -75,7 +77,8 @@ export const store = configureStore({
       mapEditorMeasurementApi.middleware,
       mapEditorAnnotationApi.middleware,
       mapEditorPreferencesApi.middleware,
-      assetTrackingApi.middleware
+      assetTrackingApi.middleware,
+      dashboardApi.middleware
     ),
 });
 

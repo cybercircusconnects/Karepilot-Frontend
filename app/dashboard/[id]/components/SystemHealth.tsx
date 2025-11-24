@@ -1,14 +1,19 @@
 "use client";
 
 import { SystemHealthComponent } from "@/components/common/SystemHealthComponent";
-import { systemHealth } from "@/lib/dashboard/data";
+import { SystemHealthItem } from "@/lib/types/dashboard/dashboard";
 
-export default function SystemHealth() {
+interface SystemHealthProps {
+  data: SystemHealthItem[];
+  organizationName: string;
+}
+
+export default function SystemHealth({ data, organizationName }: SystemHealthProps) {
   return (
     <SystemHealthComponent
       title="System Health"
-      subtitle="Service status for central Medical Hospital"
-      data={systemHealth}
+      subtitle={`Overall status for ${organizationName}`}
+      data={data}
     />
   );
 }

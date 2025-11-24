@@ -206,7 +206,7 @@ export function UploadFloorPlanModal({
                 : "closed"
             }
             initialValues={{
-              organizationId: organizationIdFromBuilding || selectedOrganizationId || "",
+              organizationId: organizationIdFromBuilding || routeOrganizationId || selectedOrganizationId || "",
               buildingId: floorPlan?.building?.id || "",
               floorLabel: floorPlan?.floorLabel || "",
               mapName: floorPlan?.title || "",
