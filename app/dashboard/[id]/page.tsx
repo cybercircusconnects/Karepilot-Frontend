@@ -1,7 +1,5 @@
 import HospitalDetail from "./components/HospitalDetail";
 
-const page = () => {
+export default function page() {
   return <HospitalDetail />;
 };
-
-export default page;

@@ -1,5 +1,5 @@
 import UsersAndRoles from "./components/UsersAndRoles";
 
-export default function UsersAndRolesPage() {
+export default function page() {
   return <UsersAndRoles />;
 }

@@ -6,7 +6,7 @@ function AlertsPageContentWrapper() {
   return <AlertsPageContent filterStatus="all" />;
 }
 
-export default function AlertsAndGeofencingPage() {
+export default function page() {
   return (
     <Suspense
       fallback={

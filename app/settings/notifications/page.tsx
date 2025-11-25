@@ -3,7 +3,7 @@ import NavigationTabs from "@/components/common/NavigationTabs";
 import { NotificationSettings } from "./components/NotificationSettings";
 import { settingsTabs } from "@/lib/settings/data";
 
-export default function NotificationsPage() {
+export default function page() {
   return (
     <DashboardLayout
       pageTitle="Settings"

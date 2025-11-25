@@ -1,18 +1,7 @@
-"use client";
-
-import { Suspense } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { MapEditorContent } from "./components";
-import { useSearchParams } from "next/navigation";
+import { MapEditorPageContent } from "./components/MapEditorPageContent";
 
-function MapEditorContentWrapper() {
-  const searchParams = useSearchParams();
-  const floorPlanId = searchParams.get("floorPlan") || undefined;
-
-  return <MapEditorContent floorPlanId={floorPlanId} />;
-}
-
-export default function MapEditorPage() {
+export default function page() {
   return (
     <DashboardLayout
       showBackButton={true}
@@ -24,9 +13,7 @@ export default function MapEditorPage() {
       organizationName="Central Medical Hospital"
       showOrganizationHeader={true}
     >
-      <Suspense fallback={<div className="flex items-center justify-center h-[calc(100vh-120px)]">Loading...</div>}>
-        <MapEditorContentWrapper />
-      </Suspense>
+      <MapEditorPageContent />
     </DashboardLayout>
   );
 }

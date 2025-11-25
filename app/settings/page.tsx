@@ -4,7 +4,7 @@ import { ProfileSettings } from "@/components/common/ProfileSettings";
 import { UserPreferences } from "@/components/common/UserPreferences";
 import { settingsTabs, userPreferences } from "@/lib/settings/data";
 
-export default function SettingsPage() {
+export default function page() {
   return (
     <DashboardLayout
       pageTitle="Settings"

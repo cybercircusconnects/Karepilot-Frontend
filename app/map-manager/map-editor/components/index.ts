@@ -1,4 +1,5 @@
 export { MapEditorContent } from "./MapEditorContent";
+export { MapEditorPageContent } from "./MapEditorPageContent";
 export { DrawingTools } from "./DrawingTools";
 export { Layers } from "./Layers";
 export { Properties } from "./Properties";

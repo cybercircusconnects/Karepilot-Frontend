@@ -6,7 +6,7 @@ function AcknowledgedAlertsPageContent() {
   return <AlertsPageContent filterStatus="acknowledged" />;
 }
 
-export default function AcknowledgedAlertsPage() {
+export default function page() {
   return (
     <Suspense
       fallback={

@@ -6,7 +6,7 @@ function ResolvedAlertsPageContent() {
   return <AlertsPageContent filterStatus="resolved" />;
 }
 
-export default function ResolvedAlertsPage() {
+export default function page() {
   return (
     <Suspense
       fallback={

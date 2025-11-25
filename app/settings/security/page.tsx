@@ -4,7 +4,7 @@ import { SecuritySettings } from "./components/SecuritySettings";
 import { PasswordSettings } from "./components/PasswordSettings";
 import { settingsTabs, securitySettings } from "@/lib/settings/data";
 
-export default function SecurityPage() {
+export default function page() {
   return (
     <DashboardLayout
       pageTitle="Settings"

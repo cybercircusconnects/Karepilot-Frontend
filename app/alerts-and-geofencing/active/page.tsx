@@ -6,7 +6,7 @@ function ActiveAlertsPageContent() {
   return <AlertsPageContent filterStatus="active" />;
 }
 
-export default function ActiveAlertsPage() {
+export default function page() {
   return (
     <Suspense
       fallback={
