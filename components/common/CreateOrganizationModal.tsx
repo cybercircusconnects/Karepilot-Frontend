@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Country, City } from "country-state-city";
 import { Formik, Form, Field } from "formik";
 import toast from "react-hot-toast";
@@ -112,9 +112,61 @@ export function CreateOrganizationModal({
     [countries],
   );
 
-  const [selectedCountry, setSelectedCountry] = useState<string>(
-    defaultInitialValues.country,
-  );
+  const [cityOptions, setCityOptions] = useState<string[]>([]);
+  const [isLoadingCities, setIsLoadingCities] = useState(false);
+  const [currentCountryForCities, setCurrentCountryForCities] = useState<string>("");
+  const countryRef = useRef<string>("");
+
+  const loadCitiesForCountry = (countryName: string, currentCity?: string) => {
+    if (!countryName) {
+      setCityOptions([]);
+      setCurrentCountryForCities("");
+      countryRef.current = "";
+      return;
+    }
+
+    const countryCode = countryMap.get(countryName);
+    if (!countryCode) {
+      console.warn(`Country code not found for: ${countryName}`);
+      setCityOptions([]);
+      setCurrentCountryForCities(countryName);
+      countryRef.current = countryName;
+      return;
+    }
+
+    if (currentCountryForCities === countryName && cityOptions.length > 0) {
+      return;
+    }
+
+    setIsLoadingCities(true);
+    setCurrentCountryForCities(countryName);
+    countryRef.current = countryName;
+
+    setTimeout(() => {
+      try {
+        const cities = City.getCitiesOfCountry(countryCode) ?? [];
+        
+        if (cities.length === 0) {
+          console.warn(`No cities found for country code: ${countryCode} (${countryName})`);
+        }
+
+        const uniqueCities = Array.from(
+          new Set(cities.map((city) => city.name.trim()))
+        ).sort((a, b) => a.localeCompare(b));
+
+        if (currentCity && !uniqueCities.includes(currentCity)) {
+          uniqueCities.unshift(currentCity);
+        }
+
+        setCityOptions(uniqueCities);
+      } catch (error) {
+        console.error("Error loading cities:", error);
+        setCityOptions([]);
+      } finally {
+        setIsLoadingCities(false);
+      }
+    }, 0);
+  };
 
   const createdByInfo = organizationData?.data?.organization?.createdBy;
   const updatedByInfo = organizationData?.data?.organization?.updatedBy;
@@ -142,32 +194,23 @@ export function CreateOrganizationModal({
     return defaultInitialValues;
   }, [isEditMode, isViewMode, organizationData]);
 
+  // Load cities when modal opens with initial country
   useEffect(() => {
     if (isOpen) {
-      setSelectedCountry(initialValues.country);
+      if (initialValues.country) {
+        loadCitiesForCountry(initialValues.country, initialValues.city);
+      } else {
+        setCityOptions([]);
+        setCurrentCountryForCities("");
+        countryRef.current = "";
+      }
+    } else {
+      setCityOptions([]);
+      setCurrentCountryForCities("");
+      countryRef.current = "";
+      setIsLoadingCities(false);
     }
-  }, [isOpen, initialValues.country]);
-
-  const cityOptions = useMemo(() => {
-    const countryCode = countryMap.get(selectedCountry);
-    if (!countryCode) {
-      return [];
-    }
-
-    const cities = Array.from(
-      new Set(
-        (City.getCitiesOfCountry(countryCode) ?? []).map((city) =>
-          city.name.trim(),
-        ),
-      ),
-    ).sort((a, b) => a.localeCompare(b));
-
-    if (initialValues.city && !cities.includes(initialValues.city)) {
-      cities.unshift(initialValues.city);
-    }
-
-    return cities;
-  }, [countryMap, selectedCountry, initialValues.city]);
+  }, [isOpen, initialValues.country, initialValues.city]);
 
   const timezoneOptions = useMemo(() => {
     const mapped = timezones.map((tz) => ({
@@ -283,174 +326,179 @@ export function CreateOrganizationModal({
             onSubmit={handleSubmit}
             enableReinitialize
           >
-            {({ values, setFieldValue }) => (
-              <Form className="flex flex-col flex-1 overflow-hidden">
-                <div className="px-6 py-6 overflow-y-auto flex-1">
-                  <VenueTemplateSelector
-                    templates={venueTemplates}
-                    selectedTemplateId={values.venueTemplate}
-                    onTemplateSelect={(templateId) =>
-                      setFieldValue("venueTemplate", templateId)
-                    }
-                    loading={isLoadingTemplates}
-                    disabled={isViewMode}
-                  />
+            {({ values, setFieldValue }) => {
+              return (
+                <Form className="flex flex-col flex-1 overflow-hidden">
+                  <div className="px-6 py-6 overflow-y-auto flex-1">
+                    <VenueTemplateSelector
+                      templates={venueTemplates}
+                      selectedTemplateId={values.venueTemplate}
+                      onTemplateSelect={(templateId) =>
+                        setFieldValue("venueTemplate", templateId)
+                      }
+                      loading={isLoadingTemplates}
+                      disabled={isViewMode}
+                    />
 
-                  <div>
-                    <h3 className="text-lg font-semibold text-card-foreground mb-4">
-                      Organization Details
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Field name="organizationType">
-                          {({ field, meta }: any) => (
-                            <div>
-                              <CustomSelect
-                                value={field.value}
-                                onChange={(value) =>
-                                  setFieldValue("organizationType", value)
-                                }
-                                options={organizationTypeOptions}
-                                placeholder="Select organization type"
-                                label="Organization Type"
-                                required
-                                disabled={isViewMode}
-                                error={meta.error}
-                                touched={meta.touched}
-                              />
-                              {meta.touched && meta.error && (
-                                <p className="text-red-500 text-xs mt-1 font-medium">
-                                  {meta.error}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </Field>
+                    <div>
+                      <h3 className="text-lg font-semibold text-card-foreground mb-4">
+                        Organization Details
+                      </h3>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <Field name="organizationType">
+                            {({ field, meta }: any) => (
+                              <div>
+                                <CustomSelect
+                                  value={field.value}
+                                  onChange={(value) =>
+                                    setFieldValue("organizationType", value)
+                                  }
+                                  options={organizationTypeOptions}
+                                  placeholder="Select organization type"
+                                  label="Organization Type"
+                                  required
+                                  disabled={isViewMode}
+                                  error={meta.error}
+                                  touched={meta.touched}
+                                />
+                                {meta.touched && meta.error && (
+                                  <p className="text-red-500 text-xs mt-1 font-medium">
+                                    {meta.error}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </Field>
 
-                        <Field name="name">
-                          {({ field, meta }: any) => (
-                            <div>
-                              <CustomInput
-                                value={field.value}
-                                onChange={(value) => setFieldValue("name", value)}
-                                placeholder="e.g. CityCare Hospital"
-                                label="Organization Name"
-                                required
-                                disabled={isViewMode}
-                                error={meta.error}
-                                touched={meta.touched}
-                              />
-                              {meta.touched && meta.error && (
-                                <p className="text-red-500 text-xs mt-1 font-medium">
-                                  {meta.error}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </Field>
-                      </div>
+                          <Field name="name">
+                            {({ field, meta }: any) => (
+                              <div>
+                                <CustomInput
+                                  value={field.value}
+                                  onChange={(value) => setFieldValue("name", value)}
+                                  placeholder="e.g. CityCare Hospital"
+                                  label="Organization Name"
+                                  required
+                                  disabled={isViewMode}
+                                  error={meta.error}
+                                  touched={meta.touched}
+                                />
+                                {meta.touched && meta.error && (
+                                  <p className="text-red-500 text-xs mt-1 font-medium">
+                                    {meta.error}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </Field>
+                        </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Field name="email">
-                          {({ field, meta }: any) => (
-                            <div>
-                              <CustomInput
-                                value={field.value}
-                                onChange={(value) => setFieldValue("email", value)}
-                                placeholder="e.g. info@organization.com"
-                                label="Contact Email"
-                                required
-                                disabled={isViewMode}
-                                error={meta.error}
-                                touched={meta.touched}
-                              />
-                              {meta.touched && meta.error && (
-                                <p className="text-red-500 text-xs mt-1 font-medium">
-                                  {meta.error}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </Field>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <Field name="email">
+                            {({ field, meta }: any) => (
+                              <div>
+                                <CustomInput
+                                  value={field.value}
+                                  onChange={(value) => setFieldValue("email", value)}
+                                  placeholder="e.g. info@organization.com"
+                                  label="Contact Email"
+                                  required
+                                  disabled={isViewMode}
+                                  error={meta.error}
+                                  touched={meta.touched}
+                                />
+                                {meta.touched && meta.error && (
+                                  <p className="text-red-500 text-xs mt-1 font-medium">
+                                    {meta.error}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </Field>
 
-                        <Field name="phone">
-                          {({ field, meta }: any) => (
-                            <div>
-                              <CustomInput
-                                value={field.value}
-                                onChange={(value) => setFieldValue("phone", value)}
-                                placeholder="e.g. +1-212-555-0199"
-                                label="Contact Phone"
-                                required
-                                disabled={isViewMode}
-                                error={meta.error}
-                                touched={meta.touched}
-                              />
-                              {meta.touched && meta.error && (
-                                <p className="text-red-500 text-xs mt-1 font-medium">
-                                  {meta.error}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </Field>
-                      </div>
+                          <Field name="phone">
+                            {({ field, meta }: any) => (
+                              <div>
+                                <CustomInput
+                                  value={field.value}
+                                  onChange={(value) => setFieldValue("phone", value)}
+                                  placeholder="e.g. +1-212-555-0199"
+                                  label="Contact Phone"
+                                  required
+                                  disabled={isViewMode}
+                                  error={meta.error}
+                                  touched={meta.touched}
+                                />
+                                {meta.touched && meta.error && (
+                                  <p className="text-red-500 text-xs mt-1 font-medium">
+                                    {meta.error}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </Field>
+                        </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Field name="country">
-                          {({ field, meta }: any) => (
-                            <div>
-                              <CustomSelect
-                                value={field.value}
-                                onChange={(value) => {
-                                  setSelectedCountry(value);
-                                  setFieldValue("country", value);
-                                  setFieldValue("city", "");
-                                }}
-                                options={countryOptions}
-                                placeholder="Select country"
-                                label="Country"
-                                required
-                                disabled={isViewMode}
-                                error={meta.error}
-                                touched={meta.touched}
-                              />
-                              {meta.touched && meta.error && (
-                                <p className="text-red-500 text-xs mt-1 font-medium">
-                                  {meta.error}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </Field>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <Field name="country">
+                            {({ field, meta }: any) => (
+                              <div>
+                                <CustomSelect
+                                  value={field.value}
+                                  onChange={(value) => {
+                                    setFieldValue("country", value);
+                                    setFieldValue("city", "");
+                                    loadCitiesForCountry(value);
+                                  }}
+                                  options={countryOptions}
+                                  placeholder="Select country"
+                                  label="Country"
+                                  required
+                                  disabled={isViewMode}
+                                  error={meta.error}
+                                  touched={meta.touched}
+                                  searchable={true}
+                                />
+                                {meta.touched && meta.error && (
+                                  <p className="text-red-500 text-xs mt-1 font-medium">
+                                    {meta.error}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </Field>
 
-                        <Field name="city">
-                          {({ field, meta }: any) => (
-                            <div>
-                              <CustomSelect
-                                value={field.value}
-                                onChange={(value) => setFieldValue("city", value)}
-                                options={cityOptions}
-                                placeholder={
-                                  cityOptions.length > 0
-                                    ? "Select city"
-                                    : "Select a country first"
-                                }
-                                label="City"
-                                required
-                                disabled={cityOptions.length === 0 || isViewMode}
-                                error={meta.error}
-                                touched={meta.touched}
-                              />
-                              {meta.touched && meta.error && (
-                                <p className="text-red-500 text-xs mt-1 font-medium">
-                                  {meta.error}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </Field>
-                      </div>
+                          <Field name="city">
+                            {({ field, meta }: any) => (
+                              <div>
+                                <CustomSelect
+                                  value={field.value}
+                                  onChange={(value) => setFieldValue("city", value)}
+                                  options={cityOptions}
+                                  placeholder={
+                                    isLoadingCities
+                                      ? "Loading cities..."
+                                      : cityOptions.length > 0
+                                      ? "Select city"
+                                      : "Select a country first"
+                                  }
+                                  label="City"
+                                  required
+                                  disabled={isLoadingCities || cityOptions.length === 0 || isViewMode}
+                                  error={meta.error}
+                                  touched={meta.touched}
+                                  searchable={true}
+                                />
+                                {meta.touched && meta.error && (
+                                  <p className="text-red-500 text-xs mt-1 font-medium">
+                                    {meta.error}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </Field>
+                        </div>
 
                       <Field name="address">
                         {({ field, meta }: any) => (
@@ -575,7 +623,8 @@ export function CreateOrganizationModal({
                   )}
                 </div>
               </Form>
-            )}
+              );
+            }}
           </Formik>
         )}
       </div>
