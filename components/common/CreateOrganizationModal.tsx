@@ -194,7 +194,6 @@ export function CreateOrganizationModal({
     return defaultInitialValues;
   }, [isEditMode, isViewMode, organizationData]);
 
-  // Load cities when modal opens with initial country
   useEffect(() => {
     if (isOpen) {
       if (initialValues.country) {

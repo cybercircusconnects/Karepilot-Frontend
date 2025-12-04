@@ -56,7 +56,6 @@ export function CustomSelect({
       }
     }
 
-    // Use a small delay to avoid immediate closing
     const timeoutId = setTimeout(() => {
       document.addEventListener("mousedown", handleClickOutside);
       document.addEventListener("keydown", handleEscape);
