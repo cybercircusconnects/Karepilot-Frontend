@@ -3,6 +3,11 @@ export interface FloorPlanBuilding {
   name: string;
 }
 
+export interface FloorPlanLocation {
+  latitude?: number | null;
+  longitude?: number | null;
+}
+
 export interface FloorPlanMetadata {
   scale?: string | null;
   description?: string | null;
@@ -21,6 +26,7 @@ export interface FloorPlan {
   floorNumber: number;
   status: "Published" | "Draft" | "Disabled" | "Archived";
   building: FloorPlanBuilding;
+  location: FloorPlanLocation;
   metadata: FloorPlanMetadata;
   media: FloorPlanMedia;
   version: number;
@@ -98,6 +104,7 @@ export interface CreateFloorPlanRequest {
   floorLabel: string;
   floorNumber?: number | null;
   status?: "Draft" | "Published" | "Disabled" | "Archived";
+  location?: FloorPlanLocation;
   media?: FloorPlanMedia;
   metadata?: FloorPlanMetadata;
   isTemplate?: boolean;

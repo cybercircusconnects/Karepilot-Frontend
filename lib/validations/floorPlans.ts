@@ -7,6 +7,8 @@ export interface CreateFloorPlanFormValues {
   mapName: string;
   mapScale: string;
   description: string;
+  latitude?: string;
+  longitude?: string;
   tags?: string[];
   selectedFile: File | null;
 }
@@ -48,6 +50,22 @@ export const createFloorPlanSchema = Yup.object().shape({
     .max(500, "Description cannot exceed 500 characters")
     .nullable()
     .required(),
+  latitude: Yup.string()
+    .optional()
+    .test("is-valid-latitude", "Latitude must be between -90 and 90", (value) => {
+      if (!value || value.trim() === "") return true;
+      const num = parseFloat(value);
+      if (isNaN(num)) return false;
+      return num >= -90 && num <= 90;
+    }),
+  longitude: Yup.string()
+    .optional()
+    .test("is-valid-longitude", "Longitude must be between -180 and 180", (value) => {
+      if (!value || value.trim() === "") return true;
+      const num = parseFloat(value);
+      if (isNaN(num)) return false;
+      return num >= -180 && num <= 180;
+    }),
   tags: Yup.array()
     .of(Yup.string().max(40, "Tag cannot exceed 40 characters"))
     .optional(),
@@ -69,6 +87,22 @@ export const updateFloorPlanSchema = Yup.object().shape({
     .max(500, "Description cannot exceed 500 characters")
     .nullable()
     .required(),
+  latitude: Yup.string()
+    .optional()
+    .test("is-valid-latitude", "Latitude must be between -90 and 90", (value) => {
+      if (!value || value.trim() === "") return true;
+      const num = parseFloat(value);
+      if (isNaN(num)) return false;
+      return num >= -90 && num <= 90;
+    }),
+  longitude: Yup.string()
+    .optional()
+    .test("is-valid-longitude", "Longitude must be between -180 and 180", (value) => {
+      if (!value || value.trim() === "") return true;
+      const num = parseFloat(value);
+      if (isNaN(num)) return false;
+      return num >= -180 && num <= 180;
+    }),
   tags: Yup.array()
     .of(Yup.string().max(40, "Tag cannot exceed 40 characters"))
     .optional(),

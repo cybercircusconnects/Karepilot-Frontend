@@ -135,7 +135,7 @@ export function PointOfInterestModal({
       initialValues={initialValues}
       validationSchema={pointOfInterestValidationSchema}
       enableReinitialize
-      onSubmit={async (values, { setSubmitting, resetForm }) => {
+      onSubmit={async (values, { setSubmitting, resetForm, setFieldValue }) => {
         try {
           const effectiveOrganizationId =
             values.organizationId || organizationId || "";
@@ -145,6 +145,16 @@ export function PointOfInterestModal({
             setSubmitting(false);
             return;
           }
+
+          // Sync location marker to form values if marker is set
+          if (marker) {
+            setFieldValue("latitude", marker.lat.toString());
+            setFieldValue("longitude", marker.lng.toString());
+          }
+
+          // Use location marker if available, otherwise fall back to form values
+          const finalLat = marker?.lat ?? (values.latitude?.trim() ? parseFloat(values.latitude.trim()) : null);
+          const finalLng = marker?.lng ?? (values.longitude?.trim() ? parseFloat(values.longitude.trim()) : null);
 
           const payload = {
             organizationId: effectiveOrganizationId,
@@ -182,14 +192,10 @@ export function PointOfInterestModal({
             },
             status: values.status,
             mapCoordinates:
-              values.latitude || values.longitude
+              finalLat !== null || finalLng !== null
                 ? {
-                    latitude: values.latitude
-                      ? parseFloat(values.latitude)
-                      : undefined,
-                    longitude: values.longitude
-                      ? parseFloat(values.longitude)
-                      : undefined,
+                    latitude: finalLat ?? undefined,
+                    longitude: finalLng ?? undefined,
                   }
                 : undefined,
             isActive: values.isActive,
@@ -451,64 +457,50 @@ export function PointOfInterestModal({
               </div>
 
               <div className="pt-4 border-t border-border">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <CustomInput
-                      value={values.latitude}
-                      onChange={(value) => setFieldValue("latitude", value)}
-                      placeholder="Latitude"
-                      label="Latitude"
-                      error={errors.latitude}
-                      touched={touched.latitude}
-                    />
-                    <CustomInput
-                      value={values.longitude}
-                      onChange={(value) => setFieldValue("longitude", value)}
-                      placeholder="Longitude"
-                      label="Longitude"
-                      error={errors.longitude}
-                      touched={touched.longitude}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-semibold text-card-foreground">
-                      Location on Map
-                    </h4>
-                    <p className="text-xs text-muted-foreground">
-                      Search for a location or click on the map to set the
-                      precise POI coordinates
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto px-3 py-2 cursor-pointer"
-                    onClick={() => {
-                      setMarker(null);
-                      setFieldValue("latitude", "");
-                      setFieldValue("longitude", "");
-                    }}
-                  >
-                    Reset
-                  </Button>
-                </div>
+                <label className="block text-xs font-medium mb-2.5 text-muted-foreground">
+                  Location Coordinates <span className="text-muted-foreground/70">(Optional)</span>
+                </label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Search for a location or click on the map to select coordinates for mobile location display
+                </p>
                 <div className="border border-border rounded-xl overflow-hidden">
                   <GoogleMap
-                    height={320}
+                    height={300}
                     marker={marker}
                     onMarkerChange={(coords) => {
                       setMarker(coords);
-                      setFieldValue("latitude", coords?.lat.toFixed(6));
-                      setFieldValue("longitude", coords?.lng.toFixed(6));
+                      if (coords) {
+                        setFieldValue("latitude", coords.lat.toString());
+                        setFieldValue("longitude", coords.lng.toString());
+                      } else {
+                        setFieldValue("latitude", "");
+                        setFieldValue("longitude", "");
+                      }
                     }}
                   />
                 </div>
+                {marker && (
+                  <div className="mt-2 flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2">
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-medium">Selected:</span> {marker.lat.toFixed(6)}, {marker.lng.toFixed(6)}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setMarker(null);
+                        setFieldValue("latitude", "");
+                        setFieldValue("longitude", "");
+                      }}
+                      className="h-auto px-2 py-1 text-xs"
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
 

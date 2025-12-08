@@ -9,9 +9,21 @@ export const pointOfInterestValidationSchema = Yup.object({
   status: Yup.string().required("Status is required"),
   email: Yup.string().email("Enter a valid email").optional(),
   latitude: Yup.string()
-    .matches(/^-?\d*\.?\d*$/, "Invalid latitude")
-    .optional(),
+    .nullable()
+    .optional()
+    .test("is-valid-latitude", "Latitude must be between -90 and 90", (value) => {
+      if (!value || value.trim() === "") return true;
+      const num = parseFloat(value);
+      if (isNaN(num)) return false;
+      return num >= -90 && num <= 90;
+    }),
   longitude: Yup.string()
-    .matches(/^-?\d*\.?\d*$/, "Invalid longitude")
-    .optional(),
+    .nullable()
+    .optional()
+    .test("is-valid-longitude", "Longitude must be between -180 and 180", (value) => {
+      if (!value || value.trim() === "") return true;
+      const num = parseFloat(value);
+      if (isNaN(num)) return false;
+      return num >= -180 && num <= 180;
+    }),
 });

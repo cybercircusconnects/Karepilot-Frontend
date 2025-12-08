@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { Formik, Form, Field, useFormikContext } from "formik";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { X, CloudUpload } from "@/icons/Icons";
 import { CustomInput } from "@/components/common/CustomInput";
 import { CustomSelect } from "@/components/common/CustomSelect";
@@ -19,6 +20,11 @@ import { useGetBuildingByIdQuery } from "@/lib/api/buildingsApi";
 import { useGetOrganizationsQuery } from "@/lib/api/organizationsApi";
 import { createFloorPlanSchema, updateFloorPlanSchema, CreateFloorPlanFormValues } from "@/lib/validations";
 import toast from "react-hot-toast";
+
+const GoogleMap = dynamic(
+  () => import("@/components/maps").then((mod) => mod.InteractivePoiMap),
+  { ssr: false },
+);
 
 type ModalMode = "upload" | "preview" | "edit";
 
@@ -80,6 +86,7 @@ export function UploadFloorPlanModal({
   const organizations = organizationsData?.data?.organizations || [];
   const [selectedOrganizationId, setSelectedOrganizationId] = useState("");
   const [tagInput, setTagInput] = useState("");
+  const [locationMarker, setLocationMarker] = useState<{ lat: number; lng: number } | null>(null);
 
   const { data: floorPlansData } = useGetAllFloorPlansQuery(
     {
@@ -101,9 +108,22 @@ export function UploadFloorPlanModal({
     mapName: floorPlan?.title || "",
     mapScale: floorPlan?.metadata?.scale || "",
     description: floorPlan?.metadata?.description || "",
+    latitude: floorPlan?.location?.latitude?.toString() || "",
+    longitude: floorPlan?.location?.longitude?.toString() || "",
     tags: floorPlan?.metadata?.tags || [],
     selectedFile: null,
   };
+
+  useEffect(() => {
+    if (floorPlan?.location?.latitude && floorPlan?.location?.longitude) {
+      setLocationMarker({
+        lat: floorPlan.location.latitude,
+        lng: floorPlan.location.longitude,
+      });
+    } else {
+      setLocationMarker(null);
+    }
+  }, [floorPlan]);
 
   const extractFloorNumber = (floorLabel: string): number | null => {
     const lower = floorLabel.toLowerCase();
@@ -211,6 +231,8 @@ export function UploadFloorPlanModal({
               mapName: floorPlan?.title || "",
               mapScale: floorPlan?.metadata?.scale || "",
               description: floorPlan?.metadata?.description || "",
+              latitude: floorPlan?.location?.latitude?.toString() || "",
+              longitude: floorPlan?.location?.longitude?.toString() || "",
               tags: floorPlan?.metadata?.tags || [],
               selectedFile: null,
             }}
@@ -218,21 +240,29 @@ export function UploadFloorPlanModal({
             enableReinitialize={true}
             validateOnBlur={!isPreviewMode}
             validateOnChange={!isPreviewMode}
-            onSubmit={async (values, { setSubmitting, resetForm, setTouched }) => {
+            onSubmit={async (values, { setSubmitting, resetForm, setTouched, setFieldValue }) => {
               if (isPreviewMode) {
                 onClose();
                 return;
               }
-            setTouched({
-              organizationId: true,
-              buildingId: true,
-              floorLabel: true,
-              mapName: true,
-              mapScale: true,
-              description: true,
-              tags: true,
-              ...(isUploadMode ? { selectedFile: true } : {}),
-            });
+
+              if (locationMarker) {
+                setFieldValue("latitude", locationMarker.lat.toString());
+                setFieldValue("longitude", locationMarker.lng.toString());
+              }
+
+              setTouched({
+                organizationId: true,
+                buildingId: true,
+                floorLabel: true,
+                mapName: true,
+                mapScale: true,
+                description: true,
+                latitude: true,
+                longitude: true,
+                tags: true,
+                ...(isUploadMode ? { selectedFile: true } : {}),
+              });
 
             try {
               if (isEditMode && floorPlanId) {
@@ -250,6 +280,9 @@ export function UploadFloorPlanModal({
                   };
                 }
 
+                const finalLat = locationMarker?.lat ?? (values.latitude?.trim() ? parseFloat(values.latitude.trim()) : null);
+                const finalLng = locationMarker?.lng ?? (values.longitude?.trim() ? parseFloat(values.longitude.trim()) : null);
+
                 const floorPlanData = {
                   organizationId: values.organizationId,
                   buildingId: values.buildingId,
@@ -257,6 +290,10 @@ export function UploadFloorPlanModal({
                   floorLabel: values.floorLabel,
                   floorNumber: extractFloorNumber(values.floorLabel),
                   status: floorPlan?.status || ("Draft" as const),
+                  location: {
+                    latitude: finalLat,
+                    longitude: finalLng,
+                  },
                   media: media || undefined,
                   metadata: {
                     scale: values.mapScale.trim(),
@@ -297,6 +334,9 @@ export function UploadFloorPlanModal({
                 toast.dismiss("upload-toast");
                 toast.loading("Creating floor plan...", { id: "create-toast" });
 
+                const finalLat = locationMarker?.lat ?? (values.latitude?.trim() ? parseFloat(values.latitude.trim()) : null);
+                const finalLng = locationMarker?.lng ?? (values.longitude?.trim() ? parseFloat(values.longitude.trim()) : null);
+
                 const floorPlanData = {
                   organizationId: values.organizationId,
                   buildingId: values.buildingId,
@@ -304,6 +344,10 @@ export function UploadFloorPlanModal({
                   floorLabel: values.floorLabel,
                   floorNumber: extractFloorNumber(values.floorLabel),
                   status: "Draft" as const,
+                  location: {
+                    latitude: finalLat,
+                    longitude: finalLng,
+                  },
                   media: {
                     fileUrl: uploadResult.data.url,
                     fileKey: uploadResult.data.publicId,
@@ -432,6 +476,68 @@ export function UploadFloorPlanModal({
                       error={touched.mapScale ? errors.mapScale : undefined}
                       touched={touched.mapScale}
                     />
+
+                    <div>
+                      <label className="block text-xs font-medium mb-2.5 text-muted-foreground">
+                        Location Coordinates <span className="text-muted-foreground/70">(Optional)</span>
+                      </label>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Search for a location or click on the map to select coordinates for mobile location display
+                      </p>
+                      {!isPreviewMode && (
+                        <GoogleMap
+                          height={300}
+                          marker={locationMarker}
+                          onMarkerChange={(coords) => {
+                            setLocationMarker(coords);
+                            if (coords) {
+                              setFieldValue("latitude", coords.lat.toString());
+                              setFieldValue("longitude", coords.lng.toString());
+                            } else {
+                              setFieldValue("latitude", "");
+                              setFieldValue("longitude", "");
+                            }
+                          }}
+                        />
+                      )}
+                      {isPreviewMode && locationMarker && (
+                        <div className="rounded-lg border border-border bg-muted/50 p-4">
+                          <p className="text-sm text-muted-foreground">
+                            <span className="font-medium">Latitude:</span> {locationMarker.lat.toFixed(6)}
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            <span className="font-medium">Longitude:</span> {locationMarker.lng.toFixed(6)}
+                          </p>
+                        </div>
+                      )}
+                      {isPreviewMode && !locationMarker && (
+                        <div className="rounded-lg border border-border bg-muted/50 p-4">
+                          <p className="text-sm text-muted-foreground">No location coordinates set</p>
+                        </div>
+                      )}
+                      {locationMarker && !isPreviewMode && (
+                        <div className="mt-2 flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2">
+                          <div className="flex-1">
+                            <p className="text-xs text-muted-foreground">
+                              <span className="font-medium">Selected:</span> {locationMarker.lat.toFixed(6)}, {locationMarker.lng.toFixed(6)}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setLocationMarker(null);
+                              setFieldValue("latitude", "");
+                              setFieldValue("longitude", "");
+                            }}
+                            className="h-auto px-2 py-1 text-xs"
+                          >
+                            Clear
+                          </Button>
+                        </div>
+                      )}
+                    </div>
 
                     <Field name="description">
                       {({ field, meta }: any) => {
