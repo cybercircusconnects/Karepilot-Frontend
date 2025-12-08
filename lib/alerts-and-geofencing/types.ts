@@ -9,6 +9,7 @@ export interface Alert {
   type: "Unauthorized Entry" | "Low Battery" | "Emergency Exit" | "System Alert";
 }
 
+
 export interface GeofenceZone {
   id: string;
   name: string;
